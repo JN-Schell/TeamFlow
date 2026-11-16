@@ -93,7 +93,7 @@ Adversaries considered:
 - [ ] Ship structured logs/metrics/traces to a central system; alert on failed logins, audit gaps, and 5xx spikes.
 - [ ] Add CSRF/origin tests to the deployment smoke suite; verify CORS origins exactly.
 - [ ] Define audit retention and access-review policy; export audit data to immutable storage if required.
-- [ ] Review dependency advisories on every release; enable Dependabot/Renovate.
+- [x] Review dependency advisories on every release. Dependabot version updates run weekly (`.github/dependabot.yml`); alerts and security updates stay enabled and are not auto-merged.
 
 ## Reporting
 

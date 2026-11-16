@@ -52,7 +52,7 @@ The web app runs at `http://localhost:5173` and the API at `http://localhost:400
 | API behavior | `npm test` |
 | UI behavior | `npm run test:e2e` with a seeded DB |
 | Database | `npx prisma validate`, migrate, regenerate, API tests |
-| Dependencies | `npm audit --omit=dev`, lockfile review |
+| Dependencies | `npm audit --omit=dev`, lockfile review, Dependabot policy below |
 | Docs only | link check, `npm run typecheck`/build if code examples changed |
 
 Integration tests use `TEST_DATABASE_URL` (default `teamflow_test`). Create it with `createdb teamflow_test`; the test setup applies migrations and resets test data.
@@ -67,6 +67,15 @@ Integration tests use `TEST_DATABASE_URL` (default `teamflow_test`). Create it w
 - Add comments only where the logic is non-obvious.
 - No secrets, tokens, `.env` files, private dumps, or local editor state in commits.
 - Do not add dependencies without an issue and security review.
+
+## Dependency updates
+
+Dependabot opens weekly pull requests from `.github/dependabot.yml`. Minor and patch updates for npm and GitHub Actions are grouped. Major updates stay as separate pull requests.
+
+- Security alerts and automated security fixes stay enabled in the repository settings. They are not auto-merged.
+- A minor or patch group may merge only after the required checks pass and the diff is limited to the lockfile and changelog note when the bump is user-visible.
+- A major update needs an engineering self-review, a changelog note, and a green required CI run. Do not enable auto-merge for major or security updates.
+- Prisma stays on the reviewed major line. A major Prisma bump is a separate change with a migration rehearsal, not a routine Dependabot merge.
 
 ## Database changes
 

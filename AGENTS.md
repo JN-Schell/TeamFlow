@@ -313,6 +313,7 @@ Current known constraints (update this section as they change):
 - No independent human reviewer is currently assigned; self-review is required and must not be represented as independent approval. Required approvals remain 0 for this reason.
 - Merge settings are squash-only; merge commits and rebase merges are disabled, merged branches auto-delete, and `allow_update_branch` remains off to preserve explicit rebases.
 - Dependabot alerts/security updates, secret scanning, secret-scanning push protection, and CodeQL default setup are enabled (issue #38, verified via API).
+- Weekly Dependabot version updates are configured in `.github/dependabot.yml` (issue #34). Minor and patch updates are grouped. Major updates are separate, require a changelog note and self-review, and must not be auto-merged. Security updates are not auto-merged.
 - The Project board remains the only tracking blocker; remaining product hardening and scale work is tracked in issues #20–#34.
 
 ## 15. Session-end checklist
