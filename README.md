@@ -218,6 +218,7 @@ request, validated by required CI checks, and squash-merged. Read
 ## Engineering notes
 
 - **Isolation is enforced in services, not only routes.** Every project/task lookup resolves the caller's membership for the resource's organization; unknown or foreign resources produce `404`. The integration suite asserts cross-tenant access on projects, tasks, search, workload, notifications, comments, and dependencies.
+- **Search is ranked and indexed.** Organization search uses PostgreSQL `pg_trgm` indexes, similarity ordering, escaped substring predicates, archived exclusion, and per-group pagination metadata.
 - **Project roles can narrow access.** A project-level viewer loses write capabilities even when their organization role is Developer. Project managers gain project-scoped management capabilities.
 - **Analytics are intentionally caveated.** Workload uses assigned open tasks and estimates; completion/velocity are flow indicators. Nothing is presented as an employee performance rating.
 - **Real-time is in-process.** The event API is isolated in `src/realtime.ts`; a Redis adapter is the documented scale-out path.

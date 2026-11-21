@@ -115,8 +115,9 @@ Hot paths are covered explicitly:
 - Planning: `dueDate`, `(priority, archived)`, `completedAt`.
 - Collaboration: `(taskId, createdAt)` comments, `(userId, readAt)` notifications.
 - Sessions: `(userId)`, `expiresAt`, unique token hash.
+- Search: `(organizationId, archived)` on tasks/projects plus `pg_trgm` GIN indexes on task title/description, project name/key/description, and user name/email.
 
-Search currently uses PostgreSQL `ILIKE` (`contains`, case-insensitive) over titles/descriptions/names. For larger corpora, add `pg_trgm` GIN indexes or a dedicated search service; the endpoint contract stays the same.
+Organization search uses escaped case-insensitive `ILIKE` substring predicates and `similarity()` ranking. PostgreSQL normally uses the GIN trigram index for rare terms on larger tables and may prefer the tenant B-tree when the organization predicate is more selective; both paths avoid scanning unrelated tenants' data.
 
 ## Migrations and seeding
 
