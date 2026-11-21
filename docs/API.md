@@ -127,7 +127,8 @@ Project creation atomically creates five default columns and a project-manager m
 | PATCH | `/notifications/:id/read` | Mark one read |
 | POST | `/notifications/read-all` | Mark all read |
 | DELETE | `/notifications/:id` | Remove |
-| GET | `/email/unsubscribe/:token` | Public one-click unsubscribe; redirects to settings |
+| GET | `/email/unsubscribe/:token` | Public unsubscribe confirmation page |
+| POST | `/email/unsubscribe` | Public token-authenticated unsubscribe; redirects to settings |
 | GET | `/health` | Database readiness probe |
 
 Notification and invitation email bodies are queued in `EmailDelivery` and sent by the API worker. Email delivery is asynchronous; queued rows use bounded retry with exponential backoff.

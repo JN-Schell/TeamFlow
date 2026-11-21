@@ -106,7 +106,7 @@ Guardrails: only an Owner may manage another Owner or assign Owner; the last Own
 - Mutations create `EmailDelivery` outbox rows instead of sending inside request transactions.
 - The API worker polls due `PENDING` rows, marks them `SENDING`, calls the configured transport, then records `SENT` or schedules exponential backoff until `maxAttempts` is exhausted.
 - `EMAIL_PROVIDER=log` is the safe development/test default: it acknowledges deliveries without emitting message bodies or secure links to logs. `EMAIL_PROVIDER=smtp` uses Nodemailer and requires `SMTP_HOST`; credentials stay in environment variables.
-- Invitation links remain expiring opaque tokens. Notification templates include a per-user unsubscribe token stored in `NotificationPreference`; category flags control assignment, update, comment, sprint, milestone, project, and invitation emails.
+- Invitation links remain expiring opaque tokens. Notification templates include a per-user unsubscribe token stored in `NotificationPreference`; category flags control assignment, update, comment, sprint, milestone, project, and invitation emails. The unsubscribe confirmation page changes state only through a POST carrying that token.
 
 ## Analytics definitions
 

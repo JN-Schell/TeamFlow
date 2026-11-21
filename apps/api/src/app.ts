@@ -47,8 +47,9 @@ export function createApp() {
       autoLogging: env.nodeEnv !== "test",
     }),
   );
-  app.use(originCheck);
   app.use("/api", apiRateLimiter);
+  app.use("/api/email", emailRouter);
+  app.use(originCheck);
   app.use("/api", csrfProtection);
 
   app.get("/api/health", async (_req, res) => {
@@ -61,7 +62,6 @@ export function createApp() {
   });
 
   app.use("/api/auth", authRouter);
-  app.use("/api/email", emailRouter);
   app.use("/api/invitations", invitationsRouter);
   app.use("/api/organizations", organizationsRouter);
   app.use("/api/organizations", peopleRouter);

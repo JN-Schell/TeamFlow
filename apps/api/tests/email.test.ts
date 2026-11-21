@@ -133,6 +133,11 @@ describe("email notifications", () => {
     });
     await request(app)
       .get(`/api/email/unsubscribe/${preference.unsubscribeToken}`)
+      .expect(200)
+      .expect("Content-Type", /html/);
+    await request(app)
+      .post("/api/email/unsubscribe")
+      .send({ token: preference.unsubscribeToken })
       .expect(302)
       .expect("Location", /\/settings\?emailUnsubscribed=1$/);
 
