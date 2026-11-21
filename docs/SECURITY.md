@@ -56,6 +56,7 @@ Adversaries considered:
 - `AuditLog` captures authenticated security actions: registrations, login success/failure, profile and password changes, role changes, member removal, invitations, project create/update/archive, task deletion, report export. Includes actor, organization, IP, user agent, and metadata.
 - `ActivityLog` provides a human-readable project/task trail and powers feeds.
 - Structured Pino logging with redaction of cookies, authorization headers, passwords, and set-cookie headers.
+- Email delivery uses a durable outbox with retry/backoff. Transport logging records delivery metadata only; rendered bodies, invite URLs, unsubscribe tokens, and SMTP credentials are not logged.
 - Audit writes are best-effort so a logging failure cannot block a legitimate mutation; failures are logged.
 
 ## OWASP Top 10 mapping
@@ -79,6 +80,7 @@ Adversaries considered:
 - `apps/api/tests/permissions.test.ts` — read-only enforcement, developer vs project manager capabilities, team lead boundaries, owner protections.
 - `apps/api/tests/auth.test.ts` — cookie flags, CSRF rejection, refresh rotation, logout revocation, password change.
 - `apps/api/tests/tasks.test.ts`, `db.test.ts`, `realtime.test.ts` — workflow integrity, constraints/cascades, socket fan-out and assignee notifications.
+- `apps/api/tests/email.test.ts` — invitation queueing, fake-transport delivery, retry/backoff, category opt-outs, unsubscribe, and template escaping.
 - `apps/web/e2e` — UI credential failure, read-only affordances, authenticated task lifecycle.
 
 ## Production checklist
@@ -89,7 +91,7 @@ Adversaries considered:
 - [ ] Run `prisma migrate deploy` as a release step; back up before migrations.
 - [ ] Use Redis for rate limiting and the Socket.IO adapter when running more than one API replica.
 - [ ] Move uploads to object storage with encryption, signed URLs, retention rules, and malware scanning.
-- [ ] Add an email provider for invitations and notification digests (never expose invite tokens in logs).
+- [ ] Configure `EMAIL_PROVIDER=smtp` with a private sender and SMTP credentials from the secrets manager. Keep the development `log` transport for local/test use; never expose invite or unsubscribe tokens in logs.
 - [ ] Ship structured logs/metrics/traces to a central system; alert on failed logins, audit gaps, and 5xx spikes.
 - [ ] Add CSRF/origin tests to the deployment smoke suite; verify CORS origins exactly.
 - [ ] Define audit retention and access-review policy; export audit data to immutable storage if required.

@@ -55,7 +55,7 @@ Common codes: `VALIDATION_ERROR` (400), `UNAUTHORIZED` (401), `FORBIDDEN`/`CSRF_
 | --- | --- | --- |
 | GET | `/organizations/:orgId/members` | Member |
 | PATCH/DELETE | `/organizations/:orgId/members/:membershipId` | `members:manage` + owner guardrails |
-| GET/POST | `/organizations/:orgId/invitations` | `members:manage` |
+| GET/POST | `/organizations/:orgId/invitations` | `members:manage`; POST queues the invitation email |
 | DELETE | `/organizations/:orgId/invitations/:id` | `members:manage` |
 | GET | `/invitations/:token` | Public summary |
 | POST | `/invitations/:token/accept` | Authenticated, email must match |
@@ -123,10 +123,15 @@ Project creation atomically creates five default columns and a project-manager m
 | Method | Path | Notes |
 | --- | --- | --- |
 | GET | `/notifications?unreadOnly=true&limit=` | Own notifications + unread count |
+| GET/PATCH | `/notifications/preferences` | Own email notification preferences |
 | PATCH | `/notifications/:id/read` | Mark one read |
 | POST | `/notifications/read-all` | Mark all read |
 | DELETE | `/notifications/:id` | Remove |
+| GET | `/email/unsubscribe/:token` | Public unsubscribe confirmation page |
+| POST | `/email/unsubscribe` | Public token-authenticated, CSRF-protected unsubscribe; redirects to settings |
 | GET | `/health` | Database readiness probe |
+
+Notification and invitation email bodies are queued in `EmailDelivery` and sent by the API worker. Email delivery is asynchronous; queued rows use bounded retry with exponential backoff.
 
 ## Examples
 

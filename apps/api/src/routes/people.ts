@@ -11,6 +11,7 @@ import { requireCapability, requireOrg } from "../middleware/org";
 import { parseBody } from "../middleware/validate";
 import { recordActivity } from "../services/activity";
 import { recordAudit } from "../services/audit";
+import { queueInvitationEmail } from "../services/email";
 import { notifyUsers } from "../services/notifications";
 
 export const peopleRouter = Router();
@@ -286,19 +287,34 @@ peopleRouter.post(
     });
 
     const token = generateOpaqueToken(24);
-    const invitation = await prisma.invitation.create({
-      data: {
-        organizationId: req.organizationId!,
-        email: input.email,
-        role: input.role,
-        token,
-        invitedById: req.user!.id,
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      },
-      include: { invitedBy: { select: { id: true, name: true } } },
-    });
-
     const inviteUrl = `${env.clientOrigins[0] ?? "http://localhost:5173"}/invite/${token}`;
+    const invitation = await prisma.$transaction(async (tx) => {
+      const created = await tx.invitation.create({
+        data: {
+          organizationId: req.organizationId!,
+          email: input.email,
+          role: input.role,
+          token,
+          invitedById: req.user!.id,
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        },
+        include: {
+          invitedBy: { select: { id: true, name: true } },
+          organization: { select: { name: true } },
+        },
+      });
+
+      await queueInvitationEmail(
+        {
+          invitation: created,
+          organizationName: created.organization.name,
+          invitedByName: created.invitedBy?.name,
+          inviteUrl,
+        },
+        tx,
+      );
+      return created;
+    });
 
     if (existingUser) {
       await notifyUsers({

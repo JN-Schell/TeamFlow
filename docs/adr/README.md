@@ -14,3 +14,4 @@ realtime semantics require an ADR.
 | [0003](0003-session-and-token-strategy.md) | Session and token strategy | Accepted |
 | [0004](0004-configurable-workflow-status.md) | Workflow columns as task status | Accepted |
 | [0005](0005-in-process-realtime.md) | In-process realtime with a scale-out path | Accepted |
+| [0006](0006-email-outbox.md) | Durable email outbox with provider abstraction | Accepted |

@@ -4,9 +4,11 @@ import { prisma } from "./db";
 import { env } from "./env";
 import { logger } from "./lib/logger";
 import { initRealtime } from "./realtime";
+import { startEmailWorker, stopEmailWorker } from "./services/email";
 
 const server = createServer(app);
 initRealtime(server);
+startEmailWorker();
 
 server.listen(env.port, () => {
   logger.info(
@@ -18,6 +20,7 @@ server.listen(env.port, () => {
 async function shutdown(signal: string) {
   logger.info({ signal }, "Shutting down");
   server.close(async () => {
+    stopEmailWorker();
     await prisma.$disconnect();
     process.exit(0);
   });

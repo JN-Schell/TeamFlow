@@ -3,7 +3,8 @@ import { z } from "zod";
 import { prisma } from "../db";
 import { asyncHandler, notFound } from "../lib/errors";
 import { authenticate } from "../middleware/auth";
-import { parseQuery } from "../middleware/validate";
+import { parseBody, parseQuery } from "../middleware/validate";
+import { ensureNotificationPreference } from "../services/email";
 
 export const notificationsRouter = Router();
 notificationsRouter.use(authenticate);
@@ -12,6 +13,40 @@ const notificationQuerySchema = z.object({
   unreadOnly: z.enum(["true", "false"]).optional(),
   limit: z.coerce.number().int().min(1).max(100).default(30),
 });
+
+const notificationPreferencesSchema = z
+  .object({
+    emailEnabled: z.boolean().optional(),
+    taskAssigned: z.boolean().optional(),
+    taskUpdated: z.boolean().optional(),
+    taskCommented: z.boolean().optional(),
+    sprintEvents: z.boolean().optional(),
+    milestoneDue: z.boolean().optional(),
+    projectEvents: z.boolean().optional(),
+    invitationEvents: z.boolean().optional(),
+  })
+  .refine((value) => Object.keys(value).length > 0, "No changes provided");
+
+notificationsRouter.get(
+  "/preferences",
+  asyncHandler(async (req, res) => {
+    const preferences = await ensureNotificationPreference(req.user!.id);
+    res.json({ preferences });
+  }),
+);
+
+notificationsRouter.patch(
+  "/preferences",
+  asyncHandler(async (req, res) => {
+    const input = parseBody(notificationPreferencesSchema, req.body);
+    await ensureNotificationPreference(req.user!.id);
+    const preferences = await prisma.notificationPreference.update({
+      where: { userId: req.user!.id },
+      data: input,
+    });
+    res.json({ preferences });
+  }),
+);
 
 notificationsRouter.get(
   "/",

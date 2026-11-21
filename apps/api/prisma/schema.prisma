@@ -73,6 +73,14 @@ enum NotificationType {
   INVITATION
 }
 
+enum EmailDeliveryStatus {
+  PENDING
+  SENDING
+  SENT
+  FAILED
+  CANCELLED
+}
+
 // ─── Identity ────────────────────────────────────────────────────────────────
 
 model User {
@@ -100,6 +108,8 @@ model User {
   auditLogs          AuditLog[]        @relation("AuditActor")
   refreshTokens      RefreshToken[]
   sentInvitations    Invitation[]      @relation("InvitationSender")
+  notificationPreference NotificationPreference?
+  emailDeliveries     EmailDelivery[]
 }
 
 model RefreshToken {
@@ -139,6 +149,7 @@ model Organization {
   tasks         Task[]
   attachments   Attachment[]
   notifications Notification[]
+  emailDeliveries EmailDelivery[]
   activities    ActivityLog[]
   auditLogs     AuditLog[]
 }
@@ -226,6 +237,7 @@ model Invitation {
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   invitedBy    User?        @relation("InvitationSender", fields: [invitedById], references: [id], onDelete: SetNull)
+  emailDeliveries EmailDelivery[]
 
   @@index([organizationId, status])
   @@index([email])
@@ -463,8 +475,57 @@ model Notification {
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emailDeliveries EmailDelivery[]
 
   @@index([userId, readAt])
+  @@index([organizationId, createdAt])
+}
+
+model NotificationPreference {
+  userId           String   @id
+  emailEnabled     Boolean  @default(true)
+  taskAssigned     Boolean  @default(true)
+  taskUpdated      Boolean  @default(false)
+  taskCommented    Boolean  @default(true)
+  sprintEvents     Boolean  @default(true)
+  milestoneDue     Boolean  @default(true)
+  projectEvents    Boolean  @default(true)
+  invitationEvents Boolean  @default(true)
+  unsubscribeToken String   @unique @default(cuid())
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model EmailDelivery {
+  id                String              @id @default(cuid())
+  organizationId    String?
+  notificationId    String?
+  invitationId      String?
+  recipientUserId   String?
+  recipientEmail    String
+  template          String
+  subject           String
+  text              String
+  html              String
+  status            EmailDeliveryStatus @default(PENDING)
+  attempts          Int                 @default(0)
+  maxAttempts       Int                 @default(5)
+  nextAttemptAt     DateTime            @default(now())
+  lastError         String?
+  providerMessageId String?
+  sentAt            DateTime?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  notification Notification? @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  invitation   Invitation?   @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  recipient    User?         @relation(fields: [recipientUserId], references: [id], onDelete: Cascade)
+
+  @@index([status, nextAttemptAt])
+  @@index([recipientUserId, createdAt])
   @@index([organizationId, createdAt])
 }
 
