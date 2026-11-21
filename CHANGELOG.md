@@ -11,6 +11,8 @@ baseline commit because no historical release record existed.
 
 ### Added
 
+- Durable email outbox with SMTP/log transports, invitation delivery,
+  notification category preferences, unsubscribe tokens, and retry/backoff. (#22)
 - Weekly Dependabot updates for npm and GitHub Actions. Minor and patch
   updates are grouped; major updates stay separate and are not auto-merged. (#34)
 - Permanent engineering workflow in `AGENTS.md`, contributor guide, issue/PR

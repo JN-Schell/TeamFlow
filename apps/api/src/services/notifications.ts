@@ -2,6 +2,7 @@ import type { NotificationType } from "@prisma/client";
 import { prisma } from "../db";
 import { logger } from "../lib/logger";
 import { emitToUser } from "../realtime";
+import { queueNotificationEmails } from "./email";
 
 export type NotificationInput = {
   organizationId: string;
@@ -39,6 +40,12 @@ export async function notifyUsers(input: NotificationInput): Promise<void> {
 
     for (const row of rows) {
       emitToUser(row.userId, "notification", row);
+    }
+
+    try {
+      await queueNotificationEmails(rows);
+    } catch (error) {
+      logger.warn({ err: error }, "failed to queue notification emails");
     }
   } catch (error) {
     logger.warn({ err: error }, "failed to create notifications");

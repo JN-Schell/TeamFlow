@@ -149,8 +149,8 @@ apps/
       domain/             capability matrix, defaults
       lib/                tokens, scrypt, cookies, CSV, uploads, errors
       middleware/         auth, org membership, CSRF, rate limits, errors
-      routes/             auth, organizations, people, projects, tasks, sprints, attachments, notifications
-      services/           tenant access, analytics, workload, audit, notifications, activity
+      routes/             auth, organizations, people, projects, tasks, sprints, attachments, notifications, email
+      services/           tenant access, analytics, workload, audit, notifications, email outbox, activity
       app.ts / index.ts   Express app and server bootstrap
     tests/                Vitest + Supertest + Socket.IO integration tests
   web/
@@ -222,7 +222,7 @@ request, validated by required CI checks, and squash-merged. Read
 - **Analytics are intentionally caveated.** Workload uses assigned open tasks and estimates; completion/velocity are flow indicators. Nothing is presented as an employee performance rating.
 - **Real-time is in-process.** The event API is isolated in `src/realtime.ts`; a Redis adapter is the documented scale-out path.
 - **Files are private.** Uploads are validated by MIME type and size, stored under random names outside the web root, and served only through an access-checked download route.
-- **Email delivery is intentionally not faked.** Invitation links are generated and surfaced in the UI; connecting an email provider is a deployment task.
+- **Email uses an outbox.** Invitation and notification messages are persisted to `EmailDelivery`, sent asynchronously with retry/backoff, and use the safe log transport unless `EMAIL_PROVIDER=smtp` is configured. Secure links are never written to logs.
 
 ## License
 

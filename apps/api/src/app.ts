@@ -11,6 +11,7 @@ import { apiRateLimiter } from "./middleware/rateLimit";
 import { csrfProtection, originCheck } from "./middleware/security";
 import { attachmentsRouter } from "./routes/attachments";
 import { authRouter } from "./routes/auth";
+import { emailRouter } from "./routes/email";
 import { invitationsRouter } from "./routes/invitations";
 import { notificationsRouter } from "./routes/notifications";
 import { organizationsRouter } from "./routes/organizations";
@@ -60,6 +61,7 @@ export function createApp() {
   });
 
   app.use("/api/auth", authRouter);
+  app.use("/api/email", emailRouter);
   app.use("/api/invitations", invitationsRouter);
   app.use("/api/organizations", organizationsRouter);
   app.use("/api/organizations", peopleRouter);

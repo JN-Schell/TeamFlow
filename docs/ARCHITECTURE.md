@@ -33,11 +33,11 @@ Docker Compose wires `web → api → postgres`. Migrations run at API container
 7. **Input validation** — Zod schemas parse bodies and queries, returning structured `400` errors.
 8. **Authorization** — capability checks (`requireCapability`) for org-level actions; `getProjectContext` / `getTaskContext` for resource-level actions, combining org role and project role.
 9. **Persistence** — Prisma with explicit selects/includes. Mutations that span tables use transactions.
-10. **Side effects** — activity records, audit records, notifications, and Socket.IO broadcasts. Activity/notification failures are logged but never roll back the user's mutation.
+10. **Side effects** — activity records, audit records, notifications, Socket.IO broadcasts, and durable email outbox rows. Activity/notification/email failures are logged but never roll back the user's mutation.
 
 ## Tenant isolation model
 
-Every tenant-owned table carries `organizationId`: projects, tasks, attachments, notifications, activity, audit logs, invitations, categories. Related tables reach the tenant through their parent (e.g. comments → task).
+Every tenant-owned table carries `organizationId`: projects, tasks, attachments, notifications, email deliveries, activity, audit logs, invitations, categories. Related tables reach the tenant through their parent (e.g. comments → task).
 
 Access always follows this path:
 
@@ -101,6 +101,13 @@ Guardrails: only an Owner may manage another Owner or assign Owner; the last Own
 - The SPA invalidates relevant React Query caches and displays notification toasts. Socket events are advisory; every client still refetches through authenticated REST endpoints.
 - The emitter is isolated in `realtime.ts`. For horizontal scale, add the Socket.IO Redis adapter and a shared rate-limit store; no route code changes are required.
 
+## Email delivery
+
+- Mutations create `EmailDelivery` outbox rows instead of sending inside request transactions.
+- The API worker polls due `PENDING` rows, marks them `SENDING`, calls the configured transport, then records `SENT` or schedules exponential backoff until `maxAttempts` is exhausted.
+- `EMAIL_PROVIDER=log` is the safe development/test default: it acknowledges deliveries without emitting message bodies or secure links to logs. `EMAIL_PROVIDER=smtp` uses Nodemailer and requires `SMTP_HOST`; credentials stay in environment variables.
+- Invitation links remain expiring opaque tokens. Notification templates include a per-user unsubscribe token stored in `NotificationPreference`; category flags control assignment, update, comment, sprint, milestone, project, and invitation emails.
+
 ## Analytics definitions
 
 | Metric | Definition |
@@ -137,6 +144,6 @@ The calendar API returns normalized events (`task`, `milestone`, `sprint`) with 
 - **Analytics aggregation in application code** keeps queries portable and easy to reason about at demo scale. At larger scale, move weekly/trend aggregates into SQL or a materialized view.
 - **In-process rate limiting and Socket.IO fan-out** are simple and dependency-free but single-node. Documented production path: Redis store + adapter.
 - **Local disk uploads** suit a single container. Production path: S3-compatible object storage with signed URLs and malware scanning.
-- **Invitation email is not sent.** Secure links are returned to the inviting admin for delivery through a real email provider. The UI states this rather than faking delivery.
+- **Email delivery is transport-agnostic.** The durable outbox supports SMTP and a safe log transport. A transactional HTTP provider can be added behind the same `EmailTransport` interface.
 - **Archive instead of hard delete for projects** preserves task/report history while removing projects from active views.
 - **Soft analytics caveat** is a product decision: no per-employee performance scoring is exposed.
