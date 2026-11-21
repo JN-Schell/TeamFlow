@@ -11,6 +11,8 @@ baseline commit because no historical release record existed.
 
 ### Added
 
+- Ranked organization search backed by PostgreSQL `pg_trgm` indexes, escaped
+  input normalization, and per-group pagination metadata. (#25)
 - Durable email outbox with SMTP/log transports, invitation delivery,
   notification category preferences, unsubscribe tokens, and retry/backoff. (#22)
 - Weekly Dependabot updates for npm and GitHub Actions. Minor and patch

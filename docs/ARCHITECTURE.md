@@ -52,6 +52,7 @@ Authenticated user
 - A resource ID from another tenant is treated as **not found**, not forbidden. This avoids leaking existence.
 - Task lookup ignores the caller-supplied project: it loads the task, then resolves the project and membership from the task's own `organizationId`.
 - List endpoints always filter by the resolved organization rather than trusting query/body tenant values.
+- Organization search runs in `services/search.ts`: parameterized `ILIKE` input is escaped, archived tasks/projects are excluded, results are ranked by exact/prefix/trigram similarity, and pagination exposes per-group counts.
 - `tests/isolation.test.ts` asserts isolation across project/task reads and writes, dashboards, analytics, workload, search, notifications, comments, dependencies, and cross-tenant assignments.
 
 ## Authorization

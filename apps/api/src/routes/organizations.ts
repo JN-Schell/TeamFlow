@@ -16,6 +16,7 @@ import { parseBody, parseQuery } from "../middleware/validate";
 import { recordActivity } from "../services/activity";
 import { getOrganizationAnalytics, buildWorkload } from "../services/analytics";
 import { recordAudit } from "../services/audit";
+import { searchOrganization } from "../services/search";
 
 export const organizationsRouter = Router();
 
@@ -85,6 +86,8 @@ const auditQuerySchema = z.object({
 
 const searchQuerySchema = z.object({
   q: z.string().trim().min(2).max(100),
+  limit: z.coerce.number().int().min(1).max(25).default(8),
+  offset: z.coerce.number().int().min(0).max(10000).default(0),
 });
 
 const categorySchema = z.object({
@@ -531,62 +534,13 @@ organizationsRouter.get(
   requireOrg,
   asyncHandler(async (req, res) => {
     const query = parseQuery(searchQuerySchema, req.query);
-    const term = query.q;
-
-    const [tasks, projects, people] = await Promise.all([
-      prisma.task.findMany({
-        where: {
-          organizationId: req.organizationId,
-          archived: false,
-          OR: [
-            { title: { contains: term, mode: "insensitive" } },
-            { description: { contains: term, mode: "insensitive" } },
-          ],
-        },
-        select: {
-          id: true,
-          number: true,
-          title: true,
-          priority: true,
-          project: { select: { id: true, name: true, key: true, color: true } },
-          column: { select: { name: true, isDone: true } },
-        },
-        orderBy: { updatedAt: "desc" },
-        take: 8,
-      }),
-      prisma.project.findMany({
-        where: {
-          organizationId: req.organizationId,
-          archived: false,
-          OR: [
-            { name: { contains: term, mode: "insensitive" } },
-            { key: { contains: term, mode: "insensitive" } },
-            { description: { contains: term, mode: "insensitive" } },
-          ],
-        },
-        select: { id: true, name: true, key: true, color: true, status: true },
-        take: 5,
-      }),
-      prisma.membership.findMany({
-        where: {
-          organizationId: req.organizationId,
-          user: {
-            OR: [
-              { name: { contains: term, mode: "insensitive" } },
-              { email: { contains: term, mode: "insensitive" } },
-            ],
-          },
-        },
-        select: {
-          user: { select: { id: true, name: true, email: true, avatarColor: true } },
-          role: true,
-          title: true,
-        },
-        take: 5,
-      }),
-    ]);
-
-    res.json({ tasks, projects, people });
+    const result = await searchOrganization(
+      req.organizationId!,
+      query.q,
+      query.limit,
+      query.offset,
+    );
+    res.json(result);
   }),
 );
 

@@ -159,6 +159,10 @@ function SearchResults() {
         tasks: { id: string; number: number; title: string; project: { id: string; key: string; name: string } }[];
         projects: { id: string; name: string; key: string }[];
         people: { user: { id: string; name: string; email: string; avatarColor: string } }[];
+        pagination: {
+          counts: { tasks: number; projects: number; people: number };
+          hasMore: { tasks: boolean; projects: boolean; people: boolean };
+        };
       }>(`/organizations/${orgId}/search?q=${encodeURIComponent(debounced)}`),
     enabled: Boolean(orgId) && debounced.length >= 2,
   });

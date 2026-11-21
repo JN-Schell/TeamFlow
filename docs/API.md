@@ -43,7 +43,7 @@ Common codes: `VALIDATION_ERROR` (400), `UNAUTHORIZED` (401), `FORBIDDEN`/`CSRF_
 | GET | `/organizations/:orgId/my-work` | Member (own assignments) |
 | GET | `/organizations/:orgId/activity?projectId=&limit=` | Member |
 | GET | `/organizations/:orgId/calendar?from=&to=&projectId=` | Member |
-| GET | `/organizations/:orgId/search?q=` | Member |
+| GET | `/organizations/:orgId/search?q=&limit=&offset=` | Member; ranked grouped results with `pagination.counts`/`hasMore` |
 | GET | `/organizations/:orgId/audit-logs?page=&limit=` | `audit:read` |
 | GET/POST | `/organizations/:orgId/categories` | Member / `org:manage` |
 | DELETE | `/organizations/:orgId/categories/:id` | `org:manage` |
