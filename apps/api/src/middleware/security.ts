@@ -46,9 +46,10 @@ export const csrfProtection: RequestHandler = (req, _res, next) => {
     return next(new AppError(403, "CSRF_MISSING", "Missing CSRF token"));
   }
 
+  const csrfCookieMatches = req.cookies?.tf_csrf === headerToken;
   const a = Buffer.from(cookieToken);
   const b = Buffer.from(headerToken);
-  if (a.length !== b.length || !timingSafeEqual(a, b)) {
+  if (!csrfCookieMatches || a.length !== b.length || !timingSafeEqual(a, b)) {
     return next(new AppError(403, "CSRF_INVALID", "Invalid CSRF token"));
   }
   next();
