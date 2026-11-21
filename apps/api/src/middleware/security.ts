@@ -1,7 +1,7 @@
 import type { RequestHandler } from "express";
 import { timingSafeEqual } from "node:crypto";
 import { env } from "../env";
-import { CSRF_COOKIE, CSRF_HEADER } from "../lib/cookies";
+import { CSRF_HEADER } from "../lib/cookies";
 import { AppError, forbidden } from "../lib/errors";
 
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
@@ -32,7 +32,7 @@ export const csrfProtection: RequestHandler = (req, _res, next) => {
   if (CSRF_EXEMPT_PATHS.has(pathname)) return next();
   if (req.get("authorization")?.startsWith("Bearer ")) return next();
 
-  const cookieToken = req.cookies?.[CSRF_COOKIE] as string | undefined;
+  const cookieToken = req.cookies?.tf_csrf as string | undefined;
   const bodyToken =
     typeof req.body === "object" &&
     req.body !== null &&
