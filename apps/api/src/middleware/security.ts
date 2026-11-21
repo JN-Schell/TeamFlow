@@ -14,6 +14,7 @@ const CSRF_EXEMPT_PATHS = new Set([
 /** Reject cross-origin state-changing requests before they reach a handler. */
 export const originCheck: RequestHandler = (req, _res, next) => {
   if (SAFE_METHODS.has(req.method)) return next();
+  if (req.path === "/api/email/unsubscribe") return next();
   const origin = req.get("origin");
   if (origin && !env.clientOrigins.includes(origin)) {
     return next(forbidden("Request origin is not allowed"));
@@ -32,7 +33,14 @@ export const csrfProtection: RequestHandler = (req, _res, next) => {
   if (req.get("authorization")?.startsWith("Bearer ")) return next();
 
   const cookieToken = req.cookies?.[CSRF_COOKIE] as string | undefined;
-  const headerToken = req.get(CSRF_HEADER);
+  const bodyToken =
+    typeof req.body === "object" &&
+    req.body !== null &&
+    "_csrf" in req.body &&
+    typeof req.body._csrf === "string"
+      ? req.body._csrf
+      : undefined;
+  const headerToken = req.get(CSRF_HEADER) ?? bodyToken;
 
   if (!cookieToken || !headerToken) {
     return next(new AppError(403, "CSRF_MISSING", "Missing CSRF token"));

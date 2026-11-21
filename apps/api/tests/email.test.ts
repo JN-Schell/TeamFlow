@@ -131,13 +131,17 @@ describe("email notifications", () => {
     const preference = await prisma.notificationPreference.findUniqueOrThrow({
       where: { userId: member.user.id },
     });
-    await request(app)
+    const unsubscribeAgent = request.agent(app);
+    const unsubscribePage = await unsubscribeAgent
       .get(`/api/email/unsubscribe/${preference.unsubscribeToken}`)
       .expect(200)
       .expect("Content-Type", /html/);
-    await request(app)
+    const csrfToken = /name="_csrf" value="([^"]+)"/.exec(unsubscribePage.text)?.[1];
+    expect(csrfToken).toBeTruthy();
+    await unsubscribeAgent
       .post("/api/email/unsubscribe")
-      .send({ token: preference.unsubscribeToken })
+      .type("form")
+      .send({ token: preference.unsubscribeToken, _csrf: csrfToken })
       .expect(302)
       .expect("Location", /\/settings\?emailUnsubscribed=1$/);
 

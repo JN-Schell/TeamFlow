@@ -40,7 +40,7 @@ email needs equivalent durability and user-controlled preferences.
 - The in-process worker is suitable for one API replica; horizontal scaling will
   require locking or moving delivery to a dedicated worker.
 - Unsubscribe links lead to a confirmation page; preference state changes only
-  through a POST carrying the public opaque token.
+  through a CSRF-protected POST carrying the public opaque token.
 
 ### Follow-ups
 

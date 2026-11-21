@@ -2,13 +2,14 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db";
 import { env } from "../env";
+import { setCsrfCookie } from "../lib/cookies";
 import { asyncHandler, notFound } from "../lib/errors";
 
 export const emailRouter = Router();
 
 const tokenSchema = z.string().regex(/^[A-Za-z0-9_-]{20,120}$/);
 
-function unsubscribePage(token: string): string {
+function unsubscribePage(token: string, csrfToken: string): string {
   return `<!doctype html>
 <html>
   <body style="font-family:system-ui,sans-serif;background:#f8fafc;padding:40px">
@@ -16,6 +17,7 @@ function unsubscribePage(token: string): string {
       <h1>Unsubscribe from TeamFlow emails</h1>
       <p>This will disable notification emails for this account.</p>
       <input type="hidden" name="token" value="${token}" />
+      <input type="hidden" name="_csrf" value="${csrfToken}" />
       <button type="submit" style="padding:10px 16px;border:0;border-radius:8px;background:#4f46e5;color:white;font-weight:600">Unsubscribe</button>
     </form>
   </body>
@@ -26,7 +28,8 @@ emailRouter.get(
   "/unsubscribe/:token",
   asyncHandler(async (req, res) => {
     const token = tokenSchema.parse(req.params.token);
-    res.type("html").send(unsubscribePage(token));
+    const csrfToken = setCsrfCookie(res);
+    res.type("html").send(unsubscribePage(token, csrfToken));
   }),
 );
 
