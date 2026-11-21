@@ -140,6 +140,12 @@ The calendar API returns normalized events (`task`, `milestone`, `sprint`) with 
 - Google Calendar / Microsoft Graph sync with external event IDs mapped in a future `CalendarConnection` table.
 - Webhook-driven updates; the existing activity/event stream is the trigger point.
 
+## Test coverage policy
+
+- `npm test` runs the real-PostgreSQL API integration suite with V8 coverage and enforces the thresholds in `apps/api/vitest.config.ts`.
+- Current non-regression baseline: 62% statements, 44% branches, 59% functions, and 66% lines.
+- Raise the baseline when adding meaningful coverage; do not lower it to accommodate untested code. If a refactor legitimately changes the denominator, document the new measurement in the PR.
+
 ## Key trade-offs and limitations
 
 - **Analytics aggregation in application code** keeps queries portable and easy to reason about at demo scale. At larger scale, move weekly/trend aggregates into SQL or a materialized view.

@@ -38,6 +38,15 @@ describe("organization search", () => {
     expect(secondPage.body.tasks).toHaveLength(1);
     expect(secondPage.body.tasks[0].id).toBe(bodyMatch.id);
     expect(secondPage.body.pagination.hasMore.tasks).toBe(false);
+
+    const normalized = await owner.agent
+      .get(`/api/organizations/${owner.orgId}/search?q=${encodeURIComponent(" ROADMAP ")}`)
+      .expect(200);
+    expect(normalized.body).toHaveProperty("tasks");
+    expect(normalized.body).toHaveProperty("projects");
+    expect(normalized.body).toHaveProperty("people");
+    expect(normalized.body.pagination.query).toBe("ROADMAP");
+    expect(normalized.body.tasks[0].id).toBe(exact.id);
   });
 
   it("excludes archived projects and tasks while keeping tenant isolation", async () => {
@@ -63,6 +72,23 @@ describe("organization search", () => {
       projects: 0,
       people: 0,
     });
+  });
+
+  it("validates empty and overlong queries", async () => {
+    const owner = await registerOwner("Search Validation");
+
+    await owner.agent
+      .get(`/api/organizations/${owner.orgId}/search?q=`)
+      .expect(400);
+    await owner.agent
+      .get(`/api/organizations/${owner.orgId}/search?q=${"x".repeat(101)}`)
+      .expect(400);
+    await owner.agent
+      .get(`/api/organizations/${owner.orgId}/search?q=roadmap&limit=26`)
+      .expect(400);
+    await owner.agent
+      .get(`/api/organizations/${owner.orgId}/search?q=roadmap&offset=-1`)
+      .expect(400);
   });
 
   it("finds organization people and treats LIKE wildcards as literal input", async () => {

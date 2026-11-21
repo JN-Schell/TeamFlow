@@ -7,6 +7,19 @@ const TEST_DATABASE_URL =
 export default defineConfig({
   test: {
     environment: "node",
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "json-summary"],
+      reportsDirectory: "./coverage",
+      include: ["src/**/*.ts"],
+      exclude: ["src/index.ts", "src/seed.ts"],
+      thresholds: {
+        statements: 62,
+        branches: 44,
+        functions: 59,
+        lines: 66,
+      },
+    },
     fileParallelism: false,
     globalSetup: ["./tests/global-setup.ts"],
     testTimeout: 30_000,
