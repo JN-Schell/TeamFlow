@@ -11,6 +11,8 @@ baseline commit because no historical release record existed.
 
 ### Added
 
+- Expanded API route integration coverage for calendar, organization,
+  reporting, and search paths, with an enforced V8 coverage baseline. (#30)
 - Ranked organization search backed by PostgreSQL `pg_trgm` indexes, escaped
   input normalization, and per-group pagination metadata. (#25)
 - Durable email outbox with SMTP/log transports, invitation delivery,
