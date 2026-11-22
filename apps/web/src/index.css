@@ -88,3 +88,60 @@
     linear-gradient(to bottom, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
   background-size: 32px 32px;
 }
+
+.text-slate-300,
+.text-slate-400 {
+  color: rgb(71 85 105);
+}
+
+.dark .text-slate-300,
+.dark .text-slate-400 {
+  color: rgb(148 163 184);
+}
+
+.text-indigo-500,
+.text-red-500,
+.text-amber-600 {
+  color: rgb(79 70 229);
+}
+
+.text-red-500 {
+  color: rgb(220 38 38);
+}
+
+.text-amber-600 {
+  color: rgb(180 83 9);
+}
+
+.dark .text-indigo-500,
+.dark .text-red-500,
+.dark .text-amber-600 {
+  color: rgb(129 140 248);
+}
+
+.dark .text-red-500 {
+  color: rgb(248 113 113);
+}
+
+.dark .text-amber-600 {
+  color: rgb(252 211 77);
+}
+
+.bg-slate-100 .text-slate-500,
+.bg-slate-100.text-slate-500 {
+  color: rgb(71 85 105);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

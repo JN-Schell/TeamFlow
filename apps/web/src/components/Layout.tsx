@@ -28,7 +28,7 @@ import { useTheme } from "../providers/ThemeProvider";
 import { useToast } from "../providers/ToastProvider";
 import { useWorkspace } from "../providers/WorkspaceProvider";
 import { ROLE_LABELS } from "../lib/permissions";
-import { Avatar, Dropdown, MenuItem } from "./ui";
+import { accessibleColorPair, Avatar, Dropdown, MenuItem } from "./ui";
 
 const NAV_ITEMS = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
@@ -65,11 +65,12 @@ function OrgSwitcher() {
 
   return (
     <Dropdown
+      label="Switch organization"
       trigger={
         <span className="flex w-full items-center gap-2.5 rounded-xl border border-slate-200 bg-white p-2 text-left transition hover:border-slate-300 dark:border-slate-800 dark:bg-ink-850 dark:hover:border-slate-700">
           <span
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-white"
-            style={{ backgroundColor: membership.organization.logoColor }}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold"
+            style={accessibleColorPair(membership.organization.logoColor)}
           >
             {membership.organization.name.slice(0, 2).toUpperCase()}
           </span>
@@ -96,8 +97,8 @@ function OrgSwitcher() {
           onClick={() => setOrgId(item.organizationId)}
           icon={
             <span
-              className="flex h-6 w-6 items-center justify-center rounded-md text-[9px] font-bold text-white"
-              style={{ backgroundColor: item.organization.logoColor }}
+              className="flex h-6 w-6 items-center justify-center rounded-md text-[9px] font-bold"
+              style={accessibleColorPair(item.organization.logoColor)}
             >
               {item.organization.name.slice(0, 2).toUpperCase()}
             </span>
@@ -178,6 +179,7 @@ function SearchResults() {
         onChange={(event) => setTerm(event.target.value)}
         onFocus={() => setFocused(true)}
         placeholder="Search tasks, projects, people…"
+        aria-label="Search tasks, projects, and people"
         className="h-9 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-16 text-sm outline-none transition placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 dark:border-slate-800 dark:bg-ink-850 dark:text-slate-100"
       />
       <kbd className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded border border-slate-200 px-1.5 py-0.5 text-[10px] font-medium text-slate-400 lg:block dark:border-slate-700">
@@ -504,6 +506,7 @@ export function AppLayout() {
             </button>
             {user ? (
               <Dropdown
+                label="Account menu"
                 trigger={
                   <span className="flex items-center gap-1.5 rounded-full p-0.5 transition hover:bg-slate-200/70 dark:hover:bg-slate-800">
                     <Avatar name={user.name} color={user.avatarColor} size="md" />

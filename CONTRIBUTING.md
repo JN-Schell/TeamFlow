@@ -57,6 +57,20 @@ The web app runs at `http://localhost:5173` and the API at `http://localhost:400
 
 Integration tests use `TEST_DATABASE_URL` (default `teamflow_test`). Create it with `createdb teamflow_test`; the test setup applies migrations and resets test data.
 
+## Accessibility checklist
+
+For UI changes, verify the relevant items below before opening a PR:
+
+- [ ] `npm run test:e2e -w @teamflow/web -- a11y.spec.ts` passes with zero axe **critical** or **serious** WCAG violations.
+- [ ] New interactive controls have accessible names, visible focus states, correct roles/landmarks, and WCAG AA contrast in light and dark themes.
+- [ ] Keyboard-only operation works, including Tab/Shift+Tab, Enter/Space activation, Escape close, arrow-key tabs/menus, and task board movement.
+- [ ] Dialogs and drawers move focus to a sensible first control, trap Tab/Shift+Tab, close with Escape, and restore focus to the triggering element.
+- [ ] Form errors are announced (`role="alert"` or an equivalent live region) and associated with the field.
+- [ ] Reduced-motion behavior is respected through `prefers-reduced-motion`; avoid animation that blocks or disorients keyboard users.
+- [ ] Any unavoidable exception is documented in the PR with the user impact, rationale, remediation plan, and accountable owner.
+
+Current accessibility exceptions: none. If one is introduced, add it to the PR and this section only with rationale and an owner; do not suppress axe findings without explicit justification.
+
 ## Code standards
 
 - TypeScript strict mode; no `any` unless justified at a boundary.

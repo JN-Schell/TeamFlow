@@ -77,7 +77,7 @@ export function CalendarPage() {
         description="Deadlines, milestones and sprint windows across the organization."
         actions={
           <div className="flex items-center gap-2">
-            <Select value={projectId} onChange={(event) => setProjectId(event.target.value)} className="w-44">
+            <Select value={projectId} onChange={(event) => setProjectId(event.target.value)} className="w-44" aria-label="Filter calendar by project">
               <option value="">All projects</option>
               {(projectsData?.projects ?? []).map((project) => (
                 <option key={project.id} value={project.id}>
@@ -169,7 +169,7 @@ export function CalendarPage() {
                         className="flex w-full items-center gap-1 rounded px-1 py-0.5 text-left text-[10px] transition hover:bg-white dark:hover:bg-slate-800"
                       >
                         <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", TYPE_STYLES[event.type])} />
-                        <span className={cn("truncate", event.isDone && "line-through opacity-50")}>{event.title}</span>
+                        <span className={cn("truncate", event.isDone && "text-slate-500 line-through dark:text-slate-400")}>{event.title}</span>
                       </button>
                     ))}
                     {events.length > 3 ? <p className="px-1 text-[9px] text-slate-400">+{events.length - 3} more</p> : null}

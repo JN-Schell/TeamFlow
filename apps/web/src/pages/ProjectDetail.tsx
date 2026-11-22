@@ -22,6 +22,7 @@ import { SprintPanel } from "../components/SprintPanel";
 import { TaskDrawer } from "../components/TaskDrawer";
 import { TaskModal } from "../components/TaskModal";
 import {
+  accessibleColorPair,
   Avatar,
   AvatarStack,
   Badge,
@@ -158,8 +159,8 @@ export function ProjectDetailPage() {
           <div className="min-w-0">
             <div className="flex items-center gap-2.5">
               <span
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xs font-bold text-white"
-                style={{ backgroundColor: project.color }}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xs font-bold"
+                style={accessibleColorPair(project.color)}
               >
                 {project.key.slice(0, 3)}
               </span>
@@ -227,9 +228,9 @@ export function ProjectDetailPage() {
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <div className="relative flex-1 sm:max-w-xs">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Filter tasks…" className="pl-9" />
+              <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Filter tasks…" aria-label="Filter tasks" className="pl-9" />
             </div>
-            <Select value={assigneeId} onChange={(event) => setAssigneeId(event.target.value)} className="sm:w-44">
+            <Select value={assigneeId} onChange={(event) => setAssigneeId(event.target.value)} className="sm:w-44" aria-label="Filter by assignee">
               <option value="">Everyone</option>
               {(project.members ?? []).map((member) => (
                 <option key={member.userId} value={member.userId}>
@@ -237,7 +238,7 @@ export function ProjectDetailPage() {
                 </option>
               ))}
             </Select>
-            <Select value={priority} onChange={(event) => setPriority(event.target.value)} className="sm:w-36">
+            <Select value={priority} onChange={(event) => setPriority(event.target.value)} className="sm:w-36" aria-label="Filter by priority">
               <option value="">Any priority</option>
               <option value="URGENT">Urgent</option>
               <option value="HIGH">High</option>
@@ -365,7 +366,7 @@ function Backlog({
       <div className="flex items-center gap-2">
         <div className="relative max-w-xs flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search backlog…" className="pl-9" />
+          <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search backlog…" aria-label="Search backlog" className="pl-9" />
         </div>
         <span className="text-xs text-slate-400">{sorted.length} tasks</span>
         {canWrite ? (

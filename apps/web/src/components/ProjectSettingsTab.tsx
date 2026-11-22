@@ -460,7 +460,7 @@ export function ProjectSettingsTab({
       >
         <div className="space-y-4">
           <Field label="Column name" required>
-            <Input value={columnName} onChange={(event) => setColumnName(event.target.value)} placeholder="Ready for QA" autoFocus />
+            <Input value={columnName} onChange={(event) => setColumnName(event.target.value)} placeholder="Ready for QA" data-autofocus />
           </Field>
           <Field label="Position">
             <Input type="number" min={0} value={columnPosition} onChange={(event) => setColumnPosition(event.target.value)} />

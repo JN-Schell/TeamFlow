@@ -31,7 +31,7 @@ test("creates, comments on, and deletes a task", async ({ page }) => {
   await expect(page.getByRole("dialog").getByText(TITLE, { exact: true })).toBeVisible();
   await expect(page).toHaveURL(/task=/);
 
-  await page.getByRole("button", { name: "Comments" }).click();
+  await page.getByRole("tab", { name: "Comments" }).click();
   await page.getByPlaceholder("Write a comment…").fill("Automated comment from Playwright.");
   await page.getByRole("button", { name: "Comment", exact: true }).click();
   await expect(page.getByText("Automated comment from Playwright.")).toBeVisible();
@@ -39,7 +39,7 @@ test("creates, comments on, and deletes a task", async ({ page }) => {
   await page.locator('button[title="Delete task"]').click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
 
-  await page.getByRole("button", { name: /Sprints/ }).click();
+  await page.getByRole("tab", { name: /Sprints/ }).click();
   await expect(page.getByRole("heading", { name: "Sprints" })).toBeVisible();
   await expect(page.getByText("Burndown")).toBeVisible();
 });

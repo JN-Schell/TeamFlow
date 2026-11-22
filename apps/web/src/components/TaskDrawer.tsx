@@ -244,8 +244,10 @@ export function TaskDrawer({
 
   return (
     <Drawer
+      key={taskId ?? "closed"}
       open={Boolean(taskId)}
       onClose={onClose}
+      returnFocusKey={taskId ? `task-${taskId}` : undefined}
       width="max-w-2xl"
       title={
         task ? (
@@ -481,7 +483,7 @@ export function TaskDrawer({
                   </div>
                   {canWrite ? (
                     <div className="mt-2 flex gap-2">
-                      <Select value={dependsOnId} onChange={(event) => setDependsOnId(event.target.value)} className="flex-1">
+                      <Select value={dependsOnId} onChange={(event) => setDependsOnId(event.target.value)} className="flex-1" aria-label="Add a blocking task">
                         <option value="">Add a blocking task…</option>
                         {dependencyOptions.map((candidate) => (
                           <option key={candidate.id} value={candidate.id}>
@@ -565,6 +567,7 @@ export function TaskDrawer({
                       value={commentBody}
                       onChange={(event) => setCommentBody(event.target.value)}
                       placeholder="Write a comment…"
+                      aria-label="Write a comment"
                       rows={3}
                       className="border-0 bg-transparent px-1 py-1 focus:ring-0 dark:bg-transparent"
                     />

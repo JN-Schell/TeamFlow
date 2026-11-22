@@ -225,7 +225,7 @@ export function MilestonePanel({ project, canManage }: { project: Project; canMa
       >
         <form onSubmit={submit} className="space-y-4">
           <Field label="Name" required>
-            <Input required minLength={2} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="Public beta" autoFocus />
+            <Input required minLength={2} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="Public beta" data-autofocus />
           </Field>
           <Field label="Description">
             <Textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} rows={3} placeholder="What does successful delivery look like?" />
@@ -242,7 +242,7 @@ export function MilestonePanel({ project, canManage }: { project: Project; canMa
               </Select>
             </Field>
           </div>
-          {error ? <p className="text-xs text-red-500">{error}</p> : null}
+          {error ? <p role="alert" className="text-xs text-red-500">{error}</p> : null}
           <button type="submit" className="hidden" aria-hidden="true" />
         </form>
       </Modal>

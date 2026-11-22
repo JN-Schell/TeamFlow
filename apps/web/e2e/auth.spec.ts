@@ -38,6 +38,6 @@ test.describe("authentication", () => {
     await expect(page.getByRole("heading", { name: "Atlas API Platform" })).toBeVisible();
     await expect(page.getByRole("button", { name: "New task" })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Settings" })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: /Backlog/ })).toBeVisible();
+    await expect(page.getByRole("tab", { name: /Backlog/ })).toBeVisible();
   });
 });

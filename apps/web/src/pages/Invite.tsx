@@ -188,7 +188,7 @@ export function InvitePage() {
                     Signed in as <strong>{user.email}</strong>
                   </div>
                   {error ? (
-                    <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
+                    <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
                       {error}
                     </p>
                   ) : null}
