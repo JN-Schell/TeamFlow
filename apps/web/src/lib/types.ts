@@ -354,6 +354,13 @@ export interface Kpis {
   avgCycleTimeDays: number;
 }
 
+export type DashboardWidget = "sprints" | "trend" | "workload" | "milestones" | "activity" | "projects";
+
+export interface DashboardPreferences {
+  widgets: DashboardWidget[];
+  updatedAt: string | null;
+}
+
 export interface OrgDashboard {
   kpis: Kpis;
   activeSprints: {

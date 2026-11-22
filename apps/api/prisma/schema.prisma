@@ -110,6 +110,10 @@ model User {
   sentInvitations    Invitation[]      @relation("InvitationSender")
   notificationPreference NotificationPreference?
   emailDeliveries     EmailDelivery[]
+  dashboardPreferences DashboardPreference[]
+
+  @@index([name(ops: raw("gin_trgm_ops"))], type: Gin, map: "User_name_trgm_idx")
+  @@index([email(ops: raw("gin_trgm_ops"))], type: Gin, map: "User_email_trgm_idx")
 }
 
 model RefreshToken {
@@ -152,6 +156,7 @@ model Organization {
   emailDeliveries EmailDelivery[]
   activities    ActivityLog[]
   auditLogs     AuditLog[]
+  dashboardPreferences DashboardPreference[]
 }
 
 model Membership {
@@ -170,6 +175,21 @@ model Membership {
   @@unique([userId, organizationId])
   @@index([organizationId, role])
   @@index([departmentId])
+}
+
+model DashboardPreference {
+  id             String   @id @default(cuid())
+  userId         String
+  organizationId String
+  widgets        Json
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+  @@index([organizationId])
 }
 
 model Department {
@@ -276,6 +296,9 @@ model Project {
 
   @@unique([organizationId, key])
   @@index([organizationId, status])
+  @@index([organizationId, archived], map: "Project_organizationId_archived_idx")
+  @@index([name(ops: raw("gin_trgm_ops"))], type: Gin, map: "Project_name_trgm_idx")
+  @@index([key(ops: raw("gin_trgm_ops"))], type: Gin, map: "Project_key_trgm_idx")
   @@index([ownerId])
   @@index([teamId])
 }
@@ -359,6 +382,8 @@ model Task {
 
   @@unique([projectId, number])
   @@index([organizationId, projectId])
+  @@index([organizationId, archived], map: "Task_organizationId_archived_idx")
+  @@index([title(ops: raw("gin_trgm_ops"))], type: Gin, map: "Task_title_trgm_idx")
   @@index([columnId])
   @@index([sprintId])
   @@index([dueDate])

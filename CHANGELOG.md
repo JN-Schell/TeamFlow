@@ -11,6 +11,8 @@ baseline commit because no historical release record existed.
 
 ### Added
 
+- Server-backed dashboard widget layouts, scoped to each user and organization,
+  with optimistic updates and a reset action. (#20)
 - Automated axe accessibility scans and keyboard interaction coverage for core
   workspace flows, dialogs, menus, tabs, and Kanban task movement. (#26)
 - Expanded API route integration coverage for calendar, organization,

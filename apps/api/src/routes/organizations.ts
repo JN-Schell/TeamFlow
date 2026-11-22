@@ -95,6 +95,23 @@ const categorySchema = z.object({
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
 });
 
+const DASHBOARD_WIDGETS = ["sprints", "trend", "workload", "milestones", "activity", "projects"] as const;
+const dashboardPreferencesSchema = z
+  .object({
+    widgets: z
+      .array(z.enum(DASHBOARD_WIDGETS))
+      .max(DASHBOARD_WIDGETS.length)
+      .transform((widgets) => [...new Set(widgets)]),
+  })
+  .strict();
+
+function dashboardPreferencesResponse(preference: { widgets: Prisma.JsonValue; updatedAt: Date } | null) {
+  return {
+    widgets: preference?.widgets ?? [...DASHBOARD_WIDGETS],
+    updatedAt: preference?.updatedAt ?? null,
+  };
+}
+
 organizationsRouter.post(
   "/",
   asyncHandler(async (req, res) => {
@@ -320,6 +337,56 @@ organizationsRouter.get(
       })),
       note: analytics.note,
     });
+  }),
+);
+
+organizationsRouter.get(
+  "/:orgId/dashboard-preferences",
+  requireOrg,
+  asyncHandler(async (req, res) => {
+    const preference = await prisma.dashboardPreference.findUnique({
+      where: {
+        userId_organizationId: {
+          userId: req.user!.id,
+          organizationId: req.organizationId!,
+        },
+      },
+    });
+    res.json(dashboardPreferencesResponse(preference));
+  }),
+);
+
+organizationsRouter.put(
+  "/:orgId/dashboard-preferences",
+  requireOrg,
+  asyncHandler(async (req, res) => {
+    const input = parseBody(dashboardPreferencesSchema, req.body);
+    const preference = await prisma.dashboardPreference.upsert({
+      where: {
+        userId_organizationId: {
+          userId: req.user!.id,
+          organizationId: req.organizationId!,
+        },
+      },
+      create: {
+        userId: req.user!.id,
+        organizationId: req.organizationId!,
+        widgets: input.widgets,
+      },
+      update: { widgets: input.widgets },
+    });
+    res.json(dashboardPreferencesResponse(preference));
+  }),
+);
+
+organizationsRouter.delete(
+  "/:orgId/dashboard-preferences",
+  requireOrg,
+  asyncHandler(async (req, res) => {
+    await prisma.dashboardPreference.deleteMany({
+      where: { userId: req.user!.id, organizationId: req.organizationId },
+    });
+    res.json(dashboardPreferencesResponse(null));
   }),
 );
 

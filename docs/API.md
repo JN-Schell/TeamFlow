@@ -38,6 +38,7 @@ Common codes: `VALIDATION_ERROR` (400), `UNAUTHORIZED` (401), `FORBIDDEN`/`CSRF_
 | GET | `/organizations/:orgId` | Member |
 | PATCH | `/organizations/:orgId` | `org:manage` |
 | GET | `/organizations/:orgId/dashboard` | Member |
+| GET/PUT/DELETE | `/organizations/:orgId/dashboard-preferences` | Member; current user's widget layout in that organization; DELETE restores defaults |
 | GET | `/organizations/:orgId/analytics?weeks=` | Member |
 | GET | `/organizations/:orgId/workload?teamId=&projectId=` | Member |
 | GET | `/organizations/:orgId/my-work` | Member (own assignments) |

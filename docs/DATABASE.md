@@ -20,6 +20,7 @@ erDiagram
   User ||--o{ Project : owns
   User ||--|| NotificationPreference : configures
   User ||--o{ EmailDelivery : receives
+  User ||--o{ DashboardPreference : configures
 
   Organization ||--o{ Membership : has
   Organization ||--o{ Department : has
@@ -33,6 +34,7 @@ erDiagram
   Organization ||--o{ EmailDelivery : scopes
   Organization ||--o{ ActivityLog : scopes
   Organization ||--o{ AuditLog : scopes
+  Organization ||--o{ DashboardPreference : scopes
 
   Department ||--o{ Team : groups
   Department ||--o{ Membership : assigns
@@ -83,6 +85,7 @@ erDiagram
 | `Milestone` | Delivery checkpoint | indexed `(projectId, dueDate)` |
 | `Notification` | Per-user realtime/read state | indexed `(userId, readAt)` |
 | `NotificationPreference` | Per-user email channel/category opt-outs | `userId` PK; `unsubscribeToken` unique |
+| `DashboardPreference` | Per-user dashboard widget layout within one organization | unique `(userId, organizationId)`; indexed `organizationId` |
 | `EmailDelivery` | Durable email outbox with rendered text/HTML, status, attempts, retry time, and provider ID | indexed `(status, nextAttemptAt)`, `(recipientUserId, createdAt)`, `(organizationId, createdAt)` |
 | `ActivityLog` | Human-readable project/task history | indexed by org/project/task + time |
 | `AuditLog` | Security-relevant actions with IP/user agent | indexed `(organizationId, createdAt)` |
@@ -94,7 +97,7 @@ erDiagram
 
 **Atomic per-project numbering.** `Project.taskCounter` is incremented inside the same transaction that creates a task, and `(projectId, number)` is unique. Human-readable keys (`ATLAS-42`) stay stable and race-safe under concurrent creation.
 
-**Tenant denormalization where it matters.** `Task`, `Attachment`, `Notification`, `EmailDelivery`, `ActivityLog`, and `AuditLog` carry `organizationId` so isolation checks and analytics queries never require joining through several parents. The API validates relationships when writing.
+**Tenant denormalization where it matters.** `Task`, `Attachment`, `Notification`, `EmailDelivery`, `ActivityLog`, `AuditLog`, and `DashboardPreference` carry `organizationId` so isolation checks and analytics queries never require joining through several parents. The API validates relationships when writing.
 
 **Dependency direction.** `TaskDependency.taskId` is the blocked task; `dependsOnTaskId` is the blocker. Cycle prevention walks the project's dependency graph before insert. Deleting either end cascades the edge.
 

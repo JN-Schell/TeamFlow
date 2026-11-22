@@ -6,6 +6,7 @@ import {
   authedDelete,
   authedPatch,
   authedPost,
+  authedPut,
   createProject,
   createTask,
   inviteMember,
@@ -128,6 +129,55 @@ describe("organization routes", () => {
     ]) {
       await other.agent.get(`/api/organizations/${owner.orgId}/${path}`).expect(404);
     }
+  });
+
+  it("persists dashboard widget preferences per user and organization", async () => {
+    const owner = await registerOwner("Dashboard Preferences");
+    const other = await registerOwner("Dashboard Preferences Other Tenant");
+    const member = await inviteMember(owner, "VIEWER");
+    const ownerPath = `/api/organizations/${owner.orgId}/dashboard-preferences`;
+    const otherPath = `/api/organizations/${other.orgId}/dashboard-preferences`;
+    const defaults = ["sprints", "trend", "workload", "milestones", "activity", "projects"];
+
+    const initial = await owner.agent.get(ownerPath).expect(200);
+    expect(initial.body).toEqual({ widgets: defaults, updatedAt: null });
+
+    const updated = await authedPut(owner, ownerPath, {
+      widgets: ["trend", "activity", "trend"],
+    }).expect(200);
+    expect(updated.body.widgets).toEqual(["trend", "activity"]);
+    expect(updated.body.updatedAt).toEqual(expect.any(String));
+
+    const stored = await prisma.dashboardPreference.findUniqueOrThrow({
+      where: {
+        userId_organizationId: {
+          userId: owner.user.id,
+          organizationId: owner.orgId,
+        },
+      },
+    });
+    expect(stored.widgets).toEqual(["trend", "activity"]);
+
+    const memberInitial = await member.agent.get(ownerPath).expect(200);
+    expect(memberInitial.body.widgets).toEqual(defaults);
+    await authedPut(member, ownerPath, { widgets: ["workload"] }).expect(200);
+    expect((await member.agent.get(ownerPath).expect(200)).body.widgets).toEqual(["workload"]);
+    expect((await owner.agent.get(ownerPath).expect(200)).body.widgets).toEqual(["trend", "activity"]);
+
+    expect((await other.agent.get(otherPath).expect(200)).body.widgets).toEqual(defaults);
+    await other.agent.get(ownerPath).expect(404);
+    await authedPut(other, ownerPath, { widgets: ["activity"] }).expect(404);
+    await authedDelete(other, ownerPath).expect(404);
+    await request(app).get(ownerPath).expect(401);
+    await request(app).put(ownerPath).send({ widgets: ["trend"] }).expect(403);
+    await request(app).delete(ownerPath).expect(403);
+    await authedPut(owner, ownerPath, { widgets: ["not-a-widget"] }).expect(400);
+    await authedPut(owner, ownerPath, { widgets: ["trend"], unknown: true }).expect(400);
+
+    const reset = await authedDelete(owner, ownerPath).expect(200);
+    expect(reset.body).toEqual({ widgets: defaults, updatedAt: null });
+    expect((await owner.agent.get(ownerPath).expect(200)).body.widgets).toEqual(defaults);
+    expect((await member.agent.get(ownerPath).expect(200)).body.widgets).toEqual(["workload"]);
   });
 
   it("normalizes calendar events, applies project filters, and rejects bad ranges", async () => {
