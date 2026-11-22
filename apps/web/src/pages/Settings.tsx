@@ -347,13 +347,12 @@ function OrganizationTab({
           {(categoryData?.categories ?? []).map((category) => (
             <span
               key={category.id}
-              className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-2.5 py-1 text-[11px] font-medium dark:border-slate-700"
-              style={{ color: category.color }}
+              className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-2.5 py-1 text-[11px] font-medium text-slate-700 dark:border-slate-700 dark:text-slate-200"
             >
               <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: category.color }} />
               {category.name}
               {canManage ? (
-                <button type="button" onClick={() => deleteCategory.mutate(category.id)} className="ml-0.5 text-slate-300 hover:text-red-500">
+                <button type="button" onClick={() => deleteCategory.mutate(category.id)} className="ml-0.5 text-slate-300 hover:text-red-500" aria-label={`Delete ${category.name}`}>
                   <Trash2 className="h-2.5 w-2.5" />
                 </button>
               ) : null}

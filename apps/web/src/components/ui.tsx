@@ -1,10 +1,12 @@
 import {
   forwardRef,
   useEffect,
+  useId,
   useRef,
   useState,
   type ButtonHTMLAttributes,
   type InputHTMLAttributes,
+  type KeyboardEvent,
   type ReactNode,
   type SelectHTMLAttributes,
   type TextareaHTMLAttributes,
@@ -114,7 +116,7 @@ export function Field({
       </span>
       {children}
       {error ? (
-        <span className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
+        <span role="alert" className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
           <AlertTriangle className="h-3 w-3" /> {error}
         </span>
       ) : hint ? (
@@ -187,6 +189,61 @@ export function PriorityBadge({ priority }: { priority: string }) {
   );
 }
 
+function relativeLuminance(red: number, green: number, blue: number) {
+  const channel = (value: number) => {
+    const normalized = value / 255;
+    return normalized <= 0.03928
+      ? normalized / 12.92
+      : ((normalized + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * channel(red) + 0.7152 * channel(green) + 0.0722 * channel(blue);
+}
+
+function contrastRatio(first: [number, number, number], second: [number, number, number]) {
+  const firstLuminance = relativeLuminance(...first);
+  const secondLuminance = relativeLuminance(...second);
+  const lighter = Math.max(firstLuminance, secondLuminance);
+  const darker = Math.min(firstLuminance, secondLuminance);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+export function accessibleColorPair(background: string) {
+  const hex = background.replace("#", "");
+  if (!/^[0-9a-f]{6}$/i.test(hex)) {
+    return { backgroundColor: background, color: "#ffffff" };
+  }
+
+  const rgb: [number, number, number] = [
+    parseInt(hex.slice(0, 2), 16),
+    parseInt(hex.slice(2, 4), 16),
+    parseInt(hex.slice(4, 6), 16),
+  ];
+  const white: [number, number, number] = [255, 255, 255];
+  const slate: [number, number, number] = [15, 23, 42];
+  if (contrastRatio(rgb, white) >= 4.5) {
+    return { backgroundColor: background, color: "#ffffff" };
+  }
+  if (contrastRatio(rgb, slate) >= 4.5) {
+    return { backgroundColor: background, color: "#0f172a" };
+  }
+
+  for (let step = 1; step <= 12; step += 1) {
+    const factor = 1 - step * 0.06;
+    const adjusted: [number, number, number] = [
+      Math.round(rgb[0] * factor),
+      Math.round(rgb[1] * factor),
+      Math.round(rgb[2] * factor),
+    ];
+    if (contrastRatio(adjusted, white) >= 4.5) {
+      return {
+        backgroundColor: `rgb(${adjusted[0]} ${adjusted[1]} ${adjusted[2]})`,
+        color: "#ffffff",
+      };
+    }
+  }
+  return { backgroundColor: "#0f172a", color: "#ffffff" };
+}
+
 export function Avatar({
   name,
   color,
@@ -207,11 +264,11 @@ export function Avatar({
   return (
     <span
       className={cn(
-        "inline-flex shrink-0 items-center justify-center rounded-full font-bold text-white ring-2 ring-white dark:ring-ink-900",
+        "inline-flex shrink-0 items-center justify-center rounded-full font-bold ring-2 ring-white dark:ring-ink-900",
         sizes[size],
         className,
       )}
-      style={{ backgroundColor: color }}
+      style={accessibleColorPair(color)}
       title={name}
     >
       {initials(name)}
@@ -302,7 +359,7 @@ export function PageHeader({
     <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
       <div className="min-w-0">
         {eyebrow ? (
-          <div className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-indigo-500 dark:text-indigo-400">
+          <div className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-300">
             {eyebrow}
           </div>
         ) : null}
@@ -392,6 +449,95 @@ export function EmptyState({
 
 // ─── Overlays ────────────────────────────────────────────────────────────────
 
+const FOCUSABLE_SELECTOR = [
+  "a[href]",
+  "button:not([disabled])",
+  "input:not([disabled])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  "[tabindex]:not([tabindex='-1'])",
+].join(",");
+
+function useOverlayFocus(open: boolean, onClose: () => void, returnFocusKey?: string) {
+  const panelRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const returnFocusKeyRef = useRef(returnFocusKey);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+    returnFocusKeyRef.current = returnFocusKey;
+  }, [onClose, returnFocusKey]);
+
+  useEffect(() => {
+    if (!open) return;
+    const panel = panelRef.current;
+    if (!panel) return;
+
+    const activeElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const keyedPrevious = returnFocusKey
+      ? document.querySelector<HTMLElement>(`[data-focus-return="${CSS.escape(returnFocusKey)}"]`)
+      : null;
+    if (keyedPrevious && !panel.contains(keyedPrevious)) previousFocusRef.current = keyedPrevious;
+    else if (activeElement && !panel.contains(activeElement)) previousFocusRef.current = activeElement;
+    const focusTarget =
+      panel.querySelector<HTMLElement>("[autofocus],[data-autofocus]") ??
+      panel.querySelector<HTMLElement>(FOCUSABLE_SELECTOR) ??
+      panel;
+    focusTarget.focus({ preventScroll: true });
+
+    const onKey = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onCloseRef.current();
+        return;
+      }
+      if (event.key !== "Tab") return;
+
+      const focusable = Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
+        (element) => !element.hasAttribute("hidden") && element.getAttribute("aria-hidden") !== "true",
+      );
+      if (focusable.length === 0) {
+        event.preventDefault();
+        panel.focus();
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && (document.activeElement === first || !panel.contains(document.activeElement))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (document.activeElement === last || !panel.contains(document.activeElement))) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+      queueMicrotask(() => {
+        if (document.contains(panel)) return;
+        const explicitReturnKey = returnFocusKeyRef.current;
+        let previous = explicitReturnKey
+          ? document.querySelector<HTMLElement>(`[data-focus-return="${CSS.escape(explicitReturnKey)}"]`)
+          : previousFocusRef.current;
+        const returnKey = previous?.dataset.focusReturn;
+        if (previous && !document.contains(previous) && returnKey) {
+          previous = document.querySelector<HTMLElement>(`[data-focus-return="${CSS.escape(returnKey)}"]`);
+        }
+        if (previous && document.contains(previous)) previous.focus({ preventScroll: true });
+        previousFocusRef.current = null;
+      });
+    };
+  }, [open]);
+
+  return panelRef;
+}
+
 export function Modal({
   open,
   onClose,
@@ -409,18 +555,8 @@ export function Modal({
   footer?: ReactNode;
   size?: "sm" | "md" | "lg" | "xl";
 }) {
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
-  }, [open, onClose]);
+  const panelRef = useOverlayFocus(open, onClose);
+  const titleId = useId();
 
   if (!open) return null;
 
@@ -430,16 +566,19 @@ export function Modal({
     <div className="fixed inset-0 z-[80] flex items-end justify-center p-0 sm:items-center sm:p-4">
       <div className="absolute inset-0 animate-fade-in bg-slate-950/60" onClick={onClose} />
       <div
+        ref={panelRef}
         role="dialog"
         aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
         className={cn(
-          "relative max-h-[92vh] w-full animate-scale-in overflow-hidden rounded-t-2xl border border-slate-200 bg-white shadow-float sm:rounded-2xl dark:border-slate-800 dark:bg-ink-900",
+          "relative max-h-[92vh] w-full animate-scale-in overflow-hidden rounded-t-2xl border border-slate-200 bg-white shadow-float outline-none sm:rounded-2xl dark:border-slate-800 dark:bg-ink-900",
           widths[size],
         )}
       >
         <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4 dark:border-slate-800">
           <div>
-            <h2 className="text-base font-semibold text-slate-900 dark:text-white">{title}</h2>
+            <h2 id={titleId} className="text-base font-semibold text-slate-900 dark:text-white">{title}</h2>
             {description ? (
               <p className="mt-0.5 text-xs leading-5 text-slate-500 dark:text-slate-400">{description}</p>
             ) : null}
@@ -472,6 +611,7 @@ export function Drawer({
   children,
   headerExtra,
   width = "max-w-xl",
+  returnFocusKey,
 }: {
   open: boolean;
   onClose: () => void;
@@ -479,19 +619,10 @@ export function Drawer({
   children: ReactNode;
   headerExtra?: ReactNode;
   width?: string;
+  returnFocusKey?: string;
 }) {
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
-  }, [open, onClose]);
+  const panelRef = useOverlayFocus(open, onClose, returnFocusKey);
+  const titleId = useId();
 
   if (!open) return null;
 
@@ -499,15 +630,18 @@ export function Drawer({
     <div className="fixed inset-0 z-[70] flex justify-end">
       <div className="absolute inset-0 animate-fade-in bg-slate-950/50" onClick={onClose} />
       <div
+        ref={panelRef}
         role="dialog"
         aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
         className={cn(
-          "relative flex h-full w-full animate-slide-in flex-col border-l border-slate-200 bg-white shadow-float dark:border-slate-800 dark:bg-ink-900",
+          "relative flex h-full w-full animate-slide-in flex-col border-l border-slate-200 bg-white shadow-float outline-none dark:border-slate-800 dark:bg-ink-900",
           width,
         )}
       >
         <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-5 py-3.5 dark:border-slate-800">
-          <div className="min-w-0 flex-1">{title}</div>
+          <div id={titleId} className="min-w-0 flex-1">{title}</div>
           <div className="flex items-center gap-1">
             {headerExtra}
             <button
@@ -540,12 +674,45 @@ export function Tabs<T extends string>({
   onChange: (value: T) => void;
   className?: string;
 }) {
+  const tablistId = useId();
+
+  function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    const keys = ["ArrowLeft", "ArrowRight", "Home", "End"];
+    if (!keys.includes(event.key)) return;
+    event.preventDefault();
+
+    const current = tabs.findIndex((tab) => tab.value === value);
+    const next =
+      event.key === "Home"
+        ? 0
+        : event.key === "End"
+          ? tabs.length - 1
+          : event.key === "ArrowRight"
+            ? (current + 1) % tabs.length
+            : (current - 1 + tabs.length) % tabs.length;
+    const nextValue = tabs[next]?.value;
+    if (!nextValue) return;
+    onChange(nextValue);
+    requestAnimationFrame(() => {
+      document.getElementById(`${tablistId}-${nextValue}`)?.focus();
+    });
+  }
+
   return (
-    <div className={cn("flex gap-1 overflow-x-auto border-b border-slate-200 dark:border-slate-800", className)}>
+    <div
+      role="tablist"
+      aria-label="Sections"
+      onKeyDown={onKeyDown}
+      className={cn("flex gap-1 overflow-x-auto border-b border-slate-200 dark:border-slate-800", className)}
+    >
       {tabs.map((tab) => (
         <button
           key={tab.value}
+          id={`${tablistId}-${tab.value}`}
           type="button"
+          role="tab"
+          aria-selected={value === tab.value}
+          tabIndex={value === tab.value ? 0 : -1}
           onClick={() => onChange(tab.value)}
           className={cn(
             "-mb-px flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2.5 text-sm font-medium transition",
@@ -572,15 +739,19 @@ export function Dropdown({
   align = "right",
   className,
   panelClassName,
+  label,
 }: {
   trigger: ReactNode;
   children: ReactNode;
   align?: "left" | "right";
   className?: string;
   panelClassName?: string;
+  label?: string;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuId = useId();
 
   useEffect(() => {
     if (!open) return;
@@ -591,19 +762,78 @@ export function Dropdown({
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
+  function menuItems() {
+    return Array.from(ref.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? []);
+  }
+
+  function focusItem(index: number) {
+    const items = menuItems();
+    if (items.length === 0) return;
+    items[Math.max(0, Math.min(items.length - 1, index))]?.focus();
+  }
+
+  function onTriggerKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
+    if (event.key === "ArrowDown" || event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      setOpen(true);
+      requestAnimationFrame(() => focusItem(0));
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setOpen(true);
+      requestAnimationFrame(() => focusItem(menuItems().length - 1));
+    }
+  }
+
+  function onMenuKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    const items = menuItems();
+    const current = items.findIndex((item) => item === document.activeElement);
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setOpen(false);
+      triggerRef.current?.focus();
+    } else if (event.key === "ArrowDown") {
+      event.preventDefault();
+      focusItem(items.length === 0 ? 0 : (current + 1) % items.length);
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      focusItem(current <= 0 ? items.length - 1 : current - 1);
+    } else if (event.key === "Home") {
+      event.preventDefault();
+      focusItem(0);
+    } else if (event.key === "End") {
+      event.preventDefault();
+      focusItem(items.length - 1);
+    } else if (event.key === "Tab") {
+      setOpen(false);
+    }
+  }
+
   return (
     <div ref={ref} className={cn("relative", className)}>
-      <button type="button" onClick={() => setOpen((current) => !current)} className="w-full text-left">
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        onKeyDown={onTriggerKeyDown}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-controls={open ? menuId : undefined}
+        className="w-full text-left"
+      >
+        {label ? <span className="sr-only">{label}</span> : null}
         {trigger}
       </button>
       {open ? (
         <div
+          id={menuId}
+          role="menu"
           className={cn(
             "absolute z-50 mt-2 min-w-[220px] animate-scale-in overflow-hidden rounded-xl border border-slate-200 bg-white p-1.5 shadow-float dark:border-slate-700 dark:bg-ink-850",
             align === "right" ? "right-0" : "left-0",
             panelClassName,
           )}
           onClick={() => setOpen(false)}
+          onKeyDown={onMenuKeyDown}
         >
           {children}
         </div>
@@ -628,6 +858,7 @@ export function MenuItem({
   return (
     <button
       type="button"
+      role="menuitem"
       onClick={onClick}
       className={cn(
         "flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition",

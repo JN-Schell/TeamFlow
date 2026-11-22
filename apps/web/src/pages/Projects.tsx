@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ProjectModal } from "../components/ProjectModal";
 import {
+  accessibleColorPair,
   Avatar,
   AvatarStack,
   Badge,
@@ -82,6 +83,7 @@ export function ProjectsPage() {
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search projects…"
+            aria-label="Search projects"
             className="pl-9"
           />
         </div>
@@ -89,6 +91,7 @@ export function ProjectsPage() {
           value={status}
           onChange={(event) => setStatus(event.target.value as ProjectStatus | "")}
           className="sm:w-44"
+          aria-label="Filter projects by status"
         >
           <option value="">All statuses</option>
           <option value="PLANNING">Planning</option>
@@ -131,8 +134,8 @@ export function ProjectsPage() {
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <span
-                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[10px] font-bold text-white"
-                      style={{ backgroundColor: project.color }}
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[10px] font-bold"
+                      style={accessibleColorPair(project.color)}
                     >
                       {project.key.slice(0, 3)}
                     </span>

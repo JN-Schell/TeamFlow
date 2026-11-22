@@ -412,7 +412,7 @@ export function SprintPanel({
       >
         <form onSubmit={createSprint} className="space-y-4">
           <Field label="Sprint name" required>
-            <Input value={name} onChange={(event) => setName(event.target.value)} required minLength={2} placeholder="Atlas Sprint 13" autoFocus />
+            <Input value={name} onChange={(event) => setName(event.target.value)} required minLength={2} placeholder="Atlas Sprint 13" data-autofocus />
           </Field>
           <Field label="Sprint goal">
             <Textarea value={goal} onChange={(event) => setGoal(event.target.value)} rows={2} placeholder="What outcome should this sprint produce?" />
@@ -425,7 +425,7 @@ export function SprintPanel({
               <Input type="date" required value={endDate} onChange={(event) => setEndDate(event.target.value)} />
             </Field>
           </div>
-          {error ? <p className="text-xs text-red-500">{error}</p> : null}
+          {error ? <p role="alert" className="text-xs text-red-500">{error}</p> : null}
           <button type="submit" className="hidden" aria-hidden="true" />
         </form>
       </Modal>

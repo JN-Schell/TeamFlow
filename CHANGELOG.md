@@ -11,6 +11,8 @@ baseline commit because no historical release record existed.
 
 ### Added
 
+- Automated axe accessibility scans and keyboard interaction coverage for core
+  workspace flows, dialogs, menus, tabs, and Kanban task movement. (#26)
 - Expanded API route integration coverage for calendar, organization,
   reporting, and search paths, with an enforced V8 coverage baseline. (#30)
 - Ranked organization search backed by PostgreSQL `pg_trgm` indexes, escaped
