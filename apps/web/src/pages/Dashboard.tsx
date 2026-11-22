@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Activity as ActivityIcon,
   AlertTriangle,
@@ -12,12 +12,10 @@ import {
   Sparkles,
   Users,
 } from "lucide-react";
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { CompletionTrendChart } from "../components/charts";
 import {
   Avatar,
-  AvatarStack,
   Badge,
   Button,
   Dropdown,
@@ -26,14 +24,14 @@ import {
   PageHeader,
   PageLoader,
   ProgressBar,
-  Skeleton,
   StatCard,
   StatusBadge,
 } from "../components/ui";
 import { api } from "../lib/api";
-import type { Activity, OrgDashboard } from "../lib/types";
+import type { Activity, DashboardPreferences, DashboardWidget, OrgDashboard } from "../lib/types";
 import { cn, formatDate, humanize, isOverdue, relativeTime } from "../lib/utils";
 import { useAuth } from "../providers/AuthProvider";
+import { useToast } from "../providers/ToastProvider";
 import { useWorkspace } from "../providers/WorkspaceProvider";
 
 const WIDGETS = [
@@ -45,7 +43,8 @@ const WIDGETS = [
   { key: "projects", label: "Project health" },
 ] as const;
 
-type WidgetKey = (typeof WIDGETS)[number]["key"];
+type WidgetKey = DashboardWidget;
+const DEFAULT_WIDGETS = WIDGETS.map((widget) => widget.key);
 
 function activityText(activity: Activity): string {
   const metadata = activity.metadata ?? {};
@@ -85,36 +84,70 @@ function activityText(activity: Activity): string {
 export function DashboardPage() {
   const { user } = useAuth();
   const { orgId, membership, can } = useWorkspace();
-  const [widgets, setWidgets] = useState<WidgetKey[]>(() => {
-    try {
-      const stored = localStorage.getItem("tf_dashboard_widgets");
-      return stored ? (JSON.parse(stored) as WidgetKey[]) : WIDGETS.map((widget) => widget.key);
-    } catch {
-      return WIDGETS.map((widget) => widget.key);
-    }
-  });
-
-  useEffect(() => {
-    try {
-      localStorage.setItem("tf_dashboard_widgets", JSON.stringify(widgets));
-    } catch {
-      // ignore storage errors
-    }
-  }, [widgets]);
+  const queryClient = useQueryClient();
+  const { push } = useToast();
+  const preferencesQueryKey = ["dashboard-preferences", orgId, user?.id] as const;
+  const preferencesPath = `/organizations/${orgId}/dashboard-preferences`;
 
   const { data, isLoading } = useQuery({
     queryKey: ["dashboard", orgId],
     queryFn: () => api<OrgDashboard>(`/organizations/${orgId}/dashboard`),
     enabled: Boolean(orgId),
   });
+  const {
+    data: preferences,
+    isLoading: preferencesLoading,
+    isError: preferencesError,
+  } = useQuery({
+    queryKey: preferencesQueryKey,
+    queryFn: () => api<DashboardPreferences>(preferencesPath),
+    enabled: Boolean(orgId && user?.id),
+  });
 
-  function toggleWidget(key: WidgetKey) {
-    setWidgets((current) =>
-      current.includes(key) ? current.filter((item) => item !== key) : [...current, key],
-    );
+  async function saveWidgets(widgets: WidgetKey[]) {
+    await queryClient.cancelQueries({ queryKey: preferencesQueryKey });
+    const previous = queryClient.getQueryData<DashboardPreferences>(preferencesQueryKey);
+    queryClient.setQueryData<DashboardPreferences>(preferencesQueryKey, {
+      widgets,
+      updatedAt: new Date().toISOString(),
+    });
+    return { previous };
   }
 
-  if (isLoading || !data) return <PageLoader label="Loading your workspace" />;
+  const updatePreferences = useMutation({
+    mutationFn: (widgets: WidgetKey[]) =>
+      api<DashboardPreferences>(preferencesPath, { method: "PUT", body: { widgets } }),
+    onMutate: saveWidgets,
+    onError: (_error, _widgets, context) => {
+      if (context?.previous) queryClient.setQueryData(preferencesQueryKey, context.previous);
+      push("Could not save dashboard layout", { tone: "error" });
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: preferencesQueryKey }),
+  });
+
+  const resetPreferences = useMutation({
+    mutationFn: () => api<DashboardPreferences>(preferencesPath, { method: "DELETE" }),
+    onMutate: () => saveWidgets(DEFAULT_WIDGETS),
+    onError: (_error, _input, context) => {
+      if (context?.previous) queryClient.setQueryData(preferencesQueryKey, context.previous);
+      push("Could not reset dashboard layout", { tone: "error" });
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: preferencesQueryKey }),
+  });
+
+  if (isLoading || preferencesLoading || !data) {
+    return <PageLoader label="Loading your workspace" />;
+  }
+
+  const widgets = preferencesError || !preferences ? DEFAULT_WIDGETS : preferences.widgets;
+
+  function toggleWidget(key: WidgetKey) {
+    const next = widgets.includes(key)
+      ? widgets.filter((item) => item !== key)
+      : [...widgets, key];
+    updatePreferences.mutate(next);
+  }
+
 
   const { kpis } = data;
   const hour = new Date().getHours();
@@ -144,6 +177,10 @@ export function DashboardPage() {
                   {widget.label}
                 </MenuItem>
               ))}
+              <div className="my-1 border-t border-slate-200 dark:border-slate-700" />
+              <MenuItem onClick={() => resetPreferences.mutate()}>
+                Reset dashboard
+              </MenuItem>
             </Dropdown>
             {can("project:create") ? (
               <Link to="/projects?new=1">

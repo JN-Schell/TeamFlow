@@ -100,6 +100,11 @@ export function authedPatch(client: Client, path: string, body?: unknown) {
   return body === undefined ? request : request.send(body as object);
 }
 
+export function authedPut(client: Client, path: string, body?: unknown) {
+  const request = client.agent.put(path).set("X-CSRF-Token", client.csrf);
+  return body === undefined ? request : request.send(body as object);
+}
+
 export function authedDelete(client: Client, path: string) {
   return client.agent.delete(path).set("X-CSRF-Token", client.csrf);
 }
